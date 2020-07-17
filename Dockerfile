@@ -6,7 +6,6 @@ RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y \
     libmicrohttpd-dev \
     libjansson-dev \
     libssl-dev \
-    libsrtp2-dev \
     libsofia-sip-ua-dev \
     libglib2.0-dev \
     libopus-dev \
@@ -20,6 +19,7 @@ RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y \
     automake \
     cmake \
     git \
+    wget \
     python3 \
     python3-pip \
     python3-setuptools \
@@ -28,6 +28,14 @@ RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y \
     rm -rf /var/lib/apt/lists/*
 
 RUN pip3 install meson
+
+RUN cd /tmp && \
+    wget https://github.com/cisco/libsrtp/archive/v2.3.0.tar.gz && \
+    tar xfv v2.3.0.tar.gz && \
+    cd libsrtp-2.3.0 && \
+    ./configure --prefix=/usr --enable-openssl && \
+    make shared_library && \
+    make install
 
 RUN git clone https://gitlab.freedesktop.org/libnice/libnice.git && \
     cd libnice && \
@@ -67,7 +75,6 @@ RUN apt-get -y update && \
     apt-get install -y \
     libmicrohttpd12 \
     libjansson4 \
-    libsrtp2-1 \
     libsofia-sip-ua0 \
     libglib2.0-0 \
     libopus0 \
@@ -76,6 +83,9 @@ RUN apt-get -y update && \
     libconfig9 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
+
+COPY --from=build /usr/lib/libsrtp2.so.1 /usr/lib/libsrtp2.so.1
+RUN ln -s /usr/lib/libsrtp2.so.1 /usr/lib/libsrtp2.so
 
 COPY --from=build /usr/lib/x86_64-linux-gnu/libnice.so.10.10.0 /usr/lib/libnice.so.10.10.0
 RUN ln -s /usr/lib/libnice.so.10.10.0 /usr/lib/libnice.so.10
