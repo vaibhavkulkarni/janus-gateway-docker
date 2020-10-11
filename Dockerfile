@@ -58,7 +58,7 @@ RUN git clone https://github.com/warmcat/libwebsockets.git && \
 
 RUN  git clone https://github.com/meetecho/janus-gateway.git && \
     cd janus-gateway && \
-    git checkout refs/tags/v0.10.3 && \
+    git checkout refs/tags/v0.10.6 && \
     sh autogen.sh && \
     ./configure --prefix=/usr/local && \
     make && \
