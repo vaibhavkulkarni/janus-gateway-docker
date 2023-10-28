@@ -1,4 +1,6 @@
-FROM ubuntu:20.04 AS build
+FROM ubuntu:23.10 AS build
+
+ARG JANUS_LATEST_TAG
 
 RUN apt-get update && apt-get upgrade -y
 
@@ -23,19 +25,12 @@ RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y \
     python3 \
     python3-pip \
     python3-setuptools \
-    python3-wheel ninja-build && \
+    python3-wheel \
+    ninja-build && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install meson
-
-RUN cd /tmp && \
-    wget https://github.com/cisco/libsrtp/archive/v2.3.0.tar.gz && \
-    tar xfv v2.3.0.tar.gz && \
-    cd libsrtp-2.3.0 && \
-    ./configure --prefix=/usr --enable-openssl && \
-    make shared_library && \
-    make install
+RUN pip3 install --break-system-packages meson
 
 RUN git clone https://gitlab.freedesktop.org/libnice/libnice.git && \
     cd libnice && \
@@ -46,26 +41,33 @@ RUN git clone https://gitlab.freedesktop.org/libnice/libnice.git && \
 RUN git clone https://github.com/sctplab/usrsctp.git && \
     cd usrsctp && \
     ./bootstrap && \
-    ./configure --prefix=/usr && make && make install
+    ./configure --prefix=/usr --libdir=/usr/lib64 --disable-programs --disable-inet --disable-inet6 && \
+    make && make install
 
 RUN git clone https://github.com/warmcat/libwebsockets.git && \
     cd libwebsockets && \
-    git checkout v3.2-stable && \
+    git checkout v4.3-stable && \
     mkdir build && \
     cd build && \
-    cmake -DLWS_MAX_SMP=1 -DCMAKE_INSTALL_PREFIX:PATH=/usr -DCMAKE_C_FLAGS="-fpic" ..  && \
+    cmake -DLWS_MAX_SMP=1 -DLWS_WITHOUT_EXTENSIONS=0 -DCMAKE_INSTALL_PREFIX:PATH=/usr -DCMAKE_C_FLAGS="-fpic" ..  && \
     make &&  make install
+
+RUN wget https://github.com/cisco/libsrtp/archive/v2.5.0.tar.gz && \
+    tar xfv v2.5.0.tar.gz && \
+    cd libsrtp-2.5.0 && \
+    ./configure --prefix=/usr --enable-openssl && \
+    make shared_library && make install
 
 RUN  git clone https://github.com/meetecho/janus-gateway.git && \
     cd janus-gateway && \
-    git checkout refs/tags/v0.10.6 && \
+    git checkout refs/tags/${JANUS_LATEST_TAG} && \
     sh autogen.sh && \
-    ./configure --prefix=/usr/local && \
+    ./configure --prefix=/usr/local --disable-rabbitmq --disable-mqtt && \
     make && \
     make install && \
     make configs
 
-FROM ubuntu:20.04 
+FROM ubuntu:23.10
 
 RUN useradd -ms /bin/bash samwad
 
@@ -87,16 +89,14 @@ RUN apt-get -y update && \
 COPY --from=build /usr/lib/libsrtp2.so.1 /usr/lib/libsrtp2.so.1
 RUN ln -s /usr/lib/libsrtp2.so.1 /usr/lib/libsrtp2.so
 
-COPY --from=build /usr/lib/x86_64-linux-gnu/libnice.so.10.10.0 /usr/lib/libnice.so.10.10.0
-RUN ln -s /usr/lib/libnice.so.10.10.0 /usr/lib/libnice.so.10
-RUN ln -s /usr/lib/libnice.so.10.10.0 /usr/lib/libnice.so
+COPY --from=build /usr/lib/x86_64-linux-gnu/libnice.so.10.13.1 /usr/lib/libnice.so.10.13.1
+RUN ln -s /usr/lib/libnice.so.10.13.1 /usr/lib/libnice.so.10
+RUN ln -s /usr/lib/libnice.so.10.13.1 /usr/lib/libnice.so
 
-COPY --from=build /usr/lib/libusrsctp.so.1.0.0 /usr/lib/libusrsctp.so.1.0.0
-RUN ln -s /usr/lib/libusrsctp.so.1.0.0 /usr/lib/libusrsctp.so
-RUN ln -s /usr/lib/libusrsctp.so.1.0.0 /usr/lib/libusrsctp.so.1
+COPY --from=build /usr/lib/libsrtp2.so /usr/lib/libsrtp2.so
 
-COPY --from=build /usr/lib/libwebsockets.so.15 /usr/lib/libwebsockets.so.15
-RUN ln -s /usr/lib/libwebsockets.so.15 /usr/lib/libwebsockets.so
+COPY --from=build /usr/lib/libwebsockets.so.19 /usr/lib/libwebsockets.so.19
+RUN ln -s /usr/lib/libwebsockets.so.19 /usr/lib/libwebsockets.so
 
 COPY --from=build /usr/local/bin/janus /usr/local/bin/janus
 COPY --from=build /usr/local/bin/janus-cfgconv /usr/local/bin/janus-cfgconv
