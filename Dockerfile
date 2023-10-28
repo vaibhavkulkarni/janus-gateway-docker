@@ -67,6 +67,8 @@ RUN  git clone https://github.com/meetecho/janus-gateway.git && \
     make install && \
     make configs
 
+RUN find /usr/lib -name *websoc*so
+
 FROM ubuntu:23.10
 
 RUN useradd -ms /bin/bash samwad
@@ -82,6 +84,7 @@ RUN apt-get -y update && \
     libopus0 \
     libogg0 \
     libcurl4 \
+    libusrsctp2 \
     libconfig9 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
@@ -95,8 +98,8 @@ RUN ln -s /usr/lib/libnice.so.10.13.1 /usr/lib/libnice.so
 
 COPY --from=build /usr/lib/libsrtp2.so /usr/lib/libsrtp2.so
 
-COPY --from=build /usr/lib/libwebsockets.so.19 /usr/lib/libwebsockets.so.19
-RUN ln -s /usr/lib/libwebsockets.so.19 /usr/lib/libwebsockets.so
+COPY --from=build /usr/lib/libwebsockets.so /usr/lib/libwebsockets.so
+RUN ln -s /usr/lib/libwebsockets.so /usr/lib/libwebsockets.so.19
 
 COPY --from=build /usr/local/bin/janus /usr/local/bin/janus
 COPY --from=build /usr/local/bin/janus-cfgconv /usr/local/bin/janus-cfgconv
