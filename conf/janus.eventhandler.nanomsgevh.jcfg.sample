@@ -1,7 +1,9 @@
-# This configures the WebSockets event handler. Since this plugin only
-# forwards each event it receives via WebSockets, you simply need to
-# configure (i) which events to subscribe to, and (ii) the address of
-# the WebSockets server which will receive the requests.
+# This configures the Nanomsg event handler. Since this plugin only
+# forwards each event it receives via Nanomsg, you simply need to
+# configure (i) which events to subscribe to, (ii) the address to use for
+# the communication, and (iii) whether the address should be used to bind
+# locally or to connect to a remote endpoint. Notice that the only supported
+# pattern is NN_PUBSUB, where the Nanomsg event handler is the publisher.
 
 general: {
 	enabled = false		# By default the module is not enabled
@@ -21,6 +23,8 @@ general: {
 	json = "indented"	# Whether the JSON messages should be indented (default),
 						# plain (no indentation) or compact (no indentation and no spaces)
 
-	backend = "ws://your.websocket.here"
-	# subprotocol = "your-subprotocol"
+	#mode = "bind"						# Whether we should 'bind' to the specified
+										# address, or connect to it if remote (default)
+	address = "ipc:///tmp/janusevh.ipc"	# Address to use, refer to the Nanomsg documentation
+										# for more info on different transports you can use here
 }

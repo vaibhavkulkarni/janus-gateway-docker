@@ -2,6 +2,6 @@
 # events = true|false, whether events should be sent to event handlers
 
 general: {
-	path = "/usr/local/share/janus/recordings"
+	path = "@recordingsdir@"
 	#events = false
 }
